@@ -230,6 +230,10 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
             else:
                 disc_opt = True
 
+        if it % 200 == 0:
+            log_('[Time %.3f] [AELoss %f] [DLoss %f]' % (time.time() - check, losses['ae_loss'].average, losses['d_loss'].average))
+
+
         if it % 20000 == 0 and it > 0:
             fvd = test_ifvd(rank, model, test_loader, it, logger)
             psnr = test_psnr(rank, model, test_loader, it, logger)
