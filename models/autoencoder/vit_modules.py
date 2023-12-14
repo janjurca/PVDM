@@ -167,9 +167,9 @@ class TimeSformerEncoder(nn.Module):
         *,
         dim = 512,
         num_frames = 16,
-        image_size = 128,
+        image_size = 256,
         patch_size = 8,
-        channels = 3,
+        channels = 1,
         depth = 8,
         heads = 8,
         dim_head = 64,
@@ -187,6 +187,7 @@ class TimeSformerEncoder(nn.Module):
 
         self.heads = heads
         self.patch_size = patch_size
+
         self.to_patch_embedding = nn.Linear(patch_dim, dim)
 
         self.use_rotary_emb = rotary_emb
@@ -241,9 +242,9 @@ class TimeSformerDecoder(nn.Module):
         *,
         dim = 512,
         num_frames = 16,
-        image_size = 128,
+        image_size = 256,
         patch_size = 8,
-        channels = 3,
+        channels = 1,
         depth = 8,
         heads = 8,
         dim_head = 64,

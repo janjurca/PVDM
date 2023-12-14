@@ -63,7 +63,7 @@ def l2(x, y):
 
 
 class LPIPSWithDiscriminator(nn.Module):
-    def __init__(self, disc_start, disc_num_layers=3, disc_in_channels=3, 
+    def __init__(self, disc_start, disc_num_layers=3, disc_in_channels=1, 
                  pixelloss_weight=4.0, disc_weight=1.0,
                  perceptual_weight=4.0, feature_weight=4.0,
                  disc_ndf=64, disc_loss="hinge", timesteps=16):
@@ -103,7 +103,6 @@ class LPIPSWithDiscriminator(nn.Module):
         frame_idx_selected = frame_idx.reshape(-1, 1, 1, 1, 1).repeat(1, c, 1, h, w)
         inputs_2d = torch.gather(inputs, 2, frame_idx_selected).squeeze(2)
         reconstructions_2d = torch.gather(reconstructions, 2, frame_idx_selected).squeeze(2)
-
         if optimizer_idx == 0:
             if self.perceptual_weight > 0:
                 """

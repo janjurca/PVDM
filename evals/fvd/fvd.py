@@ -117,5 +117,6 @@ def get_logits(i3d, videos, device):
     """
 
     with torch.no_grad():
+        videos = videos.repeat_interleave(3, dim=1)
         logits = i3d(videos.to(device))
         return logits

@@ -165,7 +165,7 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
 
 
     model.train()
-    disc_start = criterion.module.discriminator_iter_start
+    disc_start = criterion.discriminator_iter_start
     
     for it, (x, _) in enumerate(train_loader):
 
@@ -179,7 +179,6 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
         if not disc_opt:
             with autocast():
                 x_tilde, vq_loss  = model(x)
-
                 if it % accum_iter == 0:
                     model.zero_grad()
                 ae_loss = criterion(vq_loss, x, 
@@ -231,7 +230,7 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
             else:
                 disc_opt = True
 
-        if it % 2000 == 0:
+        if it % 20000 == 0 and it > 0:
             fvd = test_ifvd(rank, model, test_loader, it, logger)
             psnr = test_psnr(rank, model, test_loader, it, logger)
             if logger is not None and rank == 0:
@@ -243,8 +242,8 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
                 log_('[Time %.3f] [AELoss %f] [DLoss %f] [PSNR %f]' %
                      (time.time() - check, losses['ae_loss'].average, losses['d_loss'].average, psnr))
 
-                torch.save(model.module.state_dict(), rootdir + f'model_last.pth')
-                torch.save(criterion.module.state_dict(), rootdir + f'loss_last.pth')
+                torch.save(model.state_dict(), rootdir + f'model_last.pth')
+                torch.save(criterion.state_dict(), rootdir + f'loss_last.pth')
                 torch.save(opt.state_dict(), rootdir + f'opt.pth')
                 torch.save(d_opt.state_dict(), rootdir + f'd_opt.pth')
                 torch.save(scaler.state_dict(), rootdir + f'scaler.pth')
@@ -254,6 +253,6 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
             losses['ae_loss'] = AverageMeter()
             losses['d_loss'] = AverageMeter()
 
-        if it % 2000 == 0 and rank == 0:
-            torch.save(model.module.state_dict(), rootdir + f'model_{it}.pth')
+        if it % 20000 == 0 and it > 0:
+            torch.save(model.state_dict(), rootdir + f'model_{it}.pth')
 

@@ -20,11 +20,11 @@ from torchvision.datasets.folder import make_dataset
 from tools.video_utils import VideoClips
 from torchvision.io import read_video
 
-data_location = '/data'
 from utils import set_random_seed
 from tools.data_utils import *
 
 import av
+from PIL import Image
 
 class VideoFolderDataset(Dataset):
     def __init__(self,
@@ -269,10 +269,94 @@ class ImageFolderDataset(Dataset):
     def __len__(self):
         return self._total_size
 
-def get_loaders(rank, imgstr, resolution, timesteps, skip, batch_size=1, n_gpus=1, seed=42,  cond=False, use_train_set=False):
+
+class Meteoset(Dataset):
+    FILE_APPEND = ".png"
+    def __init__(self,
+                 _path,  # Path to directory or zip.
+                 resolution=None,
+                 nframes=16,  # number of frames for each video.
+                 train=True,
+                 interpolate=False,
+                 loader=default_loader,  # loader for "sequence" of images
+                 return_vid=True,  # True for evaluating FVD
+                 cond=False,
+                 **super_kwargs,  # Additional arguments for the Dataset base class.
+                 ):
+        self.root = _path
+        self.apply_resize = True
+
+        self.frames_per_sample = nframes
+        self.img_resolution = resolution
+        self.to_tensor = T.ToTensor()
+
+        tiles_dirs = glob.glob(os.path.join(self.root, "*"))
+        tiles = {} 
+        for tile_dir in tiles_dirs:
+            if os.path.isdir(tile_dir):
+                tile = os.path.basename(tile_dir)
+                tiles[tile] = []
+                for file in glob.glob(os.path.join(tile_dir, f"*{self.FILE_APPEND}")):
+                    tiles[tile].append(file)
+                tiles[tile].sort()
+                
+        self.sequences = []
+        diference = 600
+        for tile in tiles:
+            for i, file in enumerate(tiles[tile]):
+                sequence = []
+                file_timestamp = int(os.path.basename(file).split(".")[0])
+                for j, file2 in enumerate(tiles[tile][i+1:]):
+                    file2_timestamp = int(os.path.basename(file2).split(".")[0])
+                    if file2_timestamp == file_timestamp+(j+1)*diference:
+                        sequence.append(file2)
+                    else:
+                        break
+                    if len(sequence) == self.frames_per_sample:
+                        break
+                if len(sequence) == self.frames_per_sample:
+                    self.sequences.append(tuple(sequence))
+
+        self.train = train
+        
+        if self.train:
+            portion = 0.9
+        else:
+            portion = -0.1
+
+        if portion < 0:
+            self.sequences = self.sequences[int(len(self.sequences)*(1+portion)):]
+        else:
+            self.sequences = self.sequences[:int(len(self.sequences)*portion)]
+        print(f"Dataset length: {self.__len__()}")
+
+
+    def __getitem__(self, index):
+        sequence = self.sequences[index]
+        query = []
+        for i, file in enumerate(sequence):
+            with Image.open(file) as img:
+                img = img.convert("L")
+                img = img.resize((self.img_resolution,self.img_resolution))
+                img = T.ToTensor()(img)* 255
+                query.append(img)
+ 
+        query = torch.stack(query)
+        #print(query.shape, "expected", (self.frames_per_sample, 1, self.img_resolution, self.img_resolution))
+        return query, index
+        #return rearrange(vid, 'c t h w -> t c h w'), index
+
+
+    def __len__(self):
+        return len(self.sequences)
+
+
+def get_loaders(rank, imgstr, resolution, timesteps, skip, batch_size=1, n_gpus=1, seed=42,  cond=False, use_train_set=False, data_location=None):
     """
     Load dataloaders for an image dataset, center-cropped to a resolution.
     """
+    if data_location is None:
+        raise ValueError("data_location must be specified")
     if imgstr == 'UCF101':
         train_dir = os.path.join(data_location, 'UCF-101')
         test_dir = os.path.join(data_location, 'UCF-101') # We use all 
@@ -294,13 +378,18 @@ def get_loaders(rank, imgstr, resolution, timesteps, skip, batch_size=1, n_gpus=
         print(len(trainset))
         testset = ImageFolderDataset(test_dir, train=False, resolution=resolution, nframes=timesteps, cond=cond)
         print(len(testset))
-
+    elif imgstr == 'METEO':
+        if cond:
+            print("here")
+            timesteps *= 2
+        trainset = Meteoset(data_location, train=True, resolution=resolution, nframes=timesteps, cond=cond)
+        print(len(trainset))
+        testset = Meteoset(data_location, train=False, resolution=resolution, nframes=timesteps, cond=cond)
+        print(len(testset))
     else:
         raise NotImplementedError()    
 
-    shuffle = False if use_train_set else True
 
-    kwargs = {'pin_memory': True, 'num_workers': 3}
 
     trainset_sampler = InfiniteSampler(dataset=trainset, rank=rank, num_replicas=n_gpus, seed=seed)
     trainloader = DataLoader(trainset, sampler=trainset_sampler, batch_size=batch_size // n_gpus, pin_memory=False, num_workers=4, prefetch_factor=2)

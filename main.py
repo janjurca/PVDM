@@ -20,6 +20,7 @@ parser.add_argument('--id', type=str, default='main', help='experiment identifie
 
 """ Args about Data """
 parser.add_argument('--data', type=str, default='UCF101')
+parser.add_argument('--data-path', type=str, default='UCF101')
 parser.add_argument('--batch_size', type=int, default=24)
 parser.add_argument('--ds', type=int, default=4)
 
@@ -34,6 +35,10 @@ parser.add_argument('--first_stage_folder', type=str, default='', help='the fold
 parser.add_argument('--first_model', type=str, default='', help='the path of pretrained model')
 parser.add_argument('--scale_lr', action='store_true')
 
+parser.add_argument('--device', type=str, default='cpu')
+parser.add_argument('--checkpoint', type=str, default='')
+
+
 
 def main():
     """ Additional args ends here. """
@@ -44,7 +49,7 @@ def main():
     torch.backends.cudnn.benchmark = False
 
 
-    args.n_gpus = torch.cuda.device_count()
+    args.n_gpus = torch.cuda.device_count() if args.device == 'cuda' else 1
 
     # init and save configs
     
@@ -64,10 +69,8 @@ def main():
         args.ddpmconfig = config.model.params
         args.cond_model = config.model.cond_model
 
-        if args.n_gpus == 1:
-            diffusion(rank=0, args=args)
-        else:
-            torch.multiprocessing.spawn(fn=diffusion, args=(args, ), nprocs=args.n_gpus)
+        diffusion(rank=0, args=args)
+
 
     elif args.exp == 'first_stage':
         config = OmegaConf.load(args.pretrain_config)
@@ -80,11 +83,9 @@ def main():
         args.skip       = config.model.params.ddconfig.skip
         args.resume     = config.model.resume
         args.amp        = config.model.amp
-        if args.n_gpus == 1:
-            first_stage(rank=0, args=args)
-        else:
-            torch.multiprocessing.spawn(fn=first_stage, args=(args, ), nprocs=args.n_gpus)
 
+        first_stage(rank=0, args=args)
+        
     else:
         raise ValueError("Unknown experiment.")
 

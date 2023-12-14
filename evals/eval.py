@@ -27,14 +27,11 @@ def save_image_grid(img, fname, drange, grid_size, normalize=True):
     img = img.transpose(3, 0, 4, 1, 5, 2)
     img = img.reshape(T, gh * H, gw * W, C)
 
-    print (f'Saving Video with {T} frames, img shape {H}, {W}')
+    print (f'Saving Video with {T} frames, img shape {H}, {W}, and {C} channels')
 
-    assert C in [3]
-
-    if C == 3:
-        torchvision.io.write_video(f'{fname[:-3]}mp4', torch.from_numpy(img), fps=16)
-        imgs = [PIL.Image.fromarray(img[i], 'RGB') for i in range(len(img))]
-        imgs[0].save(fname, quality=95, save_all=True, append_images=imgs[1:], duration=100, loop=0)
+    #torchvision.io.write_video(f'{fname[:-3]}mp4', torch.from_numpy(img), fps=16)
+    imgs = [PIL.Image.fromarray(img[i].squeeze() , 'L') for i in range(len(img))]
+    imgs[0].save(fname, quality=95, save_all=True, append_images=imgs[1:], duratyion=100, loop=0)
 
     return img
 

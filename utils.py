@@ -8,7 +8,6 @@ import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-import gdown
 
 
 class Logger(object):
@@ -23,7 +22,10 @@ class Logger(object):
             os.mkdir(logdir)
 
         if len(os.listdir(logdir)) != 0 and ask:
-            exit(1)
+            print(f'Log directory {logdir} is not empty. Continue? [y/N]')
+            choice = input().lower()
+            if choice != 'y':
+                exit(1)
 
         self.set_dir(logdir)
 
@@ -112,6 +114,8 @@ def psnr(mse):
     return -10.0 * mse.log10()
 
 def download(id, fname, root=os.path.expanduser('~/.cache/video-diffusion')):
+    print(f'Downloading {fname}...')    
+    import gdown
     os.makedirs(root, exist_ok=True)
     destination = os.path.join(root, fname)
 
