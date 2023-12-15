@@ -216,8 +216,8 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
                 scaler_d.unscale_(d_opt)
 
                 # Since the gradients of optimizer's assigned params are unscaled, clips as usual:
-                torch.nn.utils.clip_grad_norm_(criterion.module.discriminator_2d.parameters(), 1.0)
-                torch.nn.utils.clip_grad_norm_(criterion.module.discriminator_3d.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(criterion.discriminator_2d.parameters(), 1.0)
+                torch.nn.utils.clip_grad_norm_(criterion.discriminator_3d.parameters(), 1.0)
 
                 scaler_d.step(d_opt)
                 scaler_d.update()
@@ -231,10 +231,10 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
                 disc_opt = True
 
         if it % 200 == 0:
-            log_('[Time %.3f] [AELoss %f] [DLoss %f]' % (time.time() - check, losses['ae_loss'].average, losses['d_loss'].average))
+            log_('[Step %d][Time %.3f] [AELoss %f] [DLoss %f]' % (it, time.time() - check, losses['ae_loss'].average, losses['d_loss'].average))
 
 
-        if it % 20000 == 0 and it > 0:
+        if it % 5000 == 0 and it > 0:
             fvd = test_ifvd(rank, model, test_loader, it, logger)
             psnr = test_psnr(rank, model, test_loader, it, logger)
             if logger is not None and rank == 0:
@@ -257,6 +257,6 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
             losses['ae_loss'] = AverageMeter()
             losses['d_loss'] = AverageMeter()
 
-        if it % 20000 == 0 and it > 0:
+        if it % 5000 == 0 and it > 0:
             torch.save(model.state_dict(), rootdir + f'model_{it}.pth')
 
