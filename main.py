@@ -37,7 +37,8 @@ parser.add_argument('--scale_lr', action='store_true')
 
 parser.add_argument('--device', type=str, default='cpu')
 parser.add_argument('--checkpoint', type=str, default='')
-
+parser.add_argument('--partial-load', action='store_true')
+parser.add_argument('--vit_sample', action='store_true')
 
 
 def main():

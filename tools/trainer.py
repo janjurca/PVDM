@@ -121,9 +121,9 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
 
 
         if it % 10000 == 0 and rank == 0:
-            torch.save(model.module.state_dict(), rootdir + f'model_{it}.pth')
+            torch.save(model.state_dict(), rootdir + f'model_{it}.pth')
             ema.copy_to(ema_model)
-            torch.save(ema_model.module.state_dict(), rootdir + f'ema_model_{it}.pth')
+            torch.save(ema_model.state_dict(), rootdir + f'ema_model_{it}.pth')
             fvd = test_fvd_ddpm(rank, ema_model, first_stage_model, test_loader, it, logger)
 
 

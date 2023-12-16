@@ -9,6 +9,8 @@ from models.autoencoder.autoencoder_vit import ViTAutoencoder
 from losses.perceptual import LPIPSWithDiscriminator
 
 from utils import file_name, Logger
+from einops import rearrange
+
 
 def first_stage(rank, args):
     device = torch.device(args.device)
@@ -39,7 +41,7 @@ def first_stage(rank, args):
         del model_ckpt["to_pixel.1.weight"]
         del model_ckpt["to_pixel.1.bias"]
         print("Partial loading")
-        model.load_state_dict(model_ckpt, strict=False)
+        model.load_state_dict(model_ckpt, strict=not args.partial_load)
         del model_ckpt
     model = model.to(device)
 
@@ -64,6 +66,18 @@ def first_stage(rank, args):
 
         del model_ckpt
         del opt_ckpt
+
+    if args.vit_sample:
+        model.eval()
+        for batch in train_loader: 
+            x, _ = batch
+            x = rearrange(x / 127.5 - 1, 'b t c h w -> b c t h w') # videos
+            x = x.to(device)
+            with torch.no_grad():
+                print("Sampling")
+                model(x)
+            print("Sampled")
+        exit()
 
     torch.save(model.state_dict(), rootdir + f'net_init.pth')
 
