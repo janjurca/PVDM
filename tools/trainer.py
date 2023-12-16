@@ -56,7 +56,7 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
         # conditional free guidance training
         model.zero_grad()
 
-        if model.module.diffusion_model.cond_model:
+        if model.diffusion_model.cond_model:
             p = np.random.random()
 
             if p < cond_prob:
@@ -66,8 +66,8 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
 
                 with autocast():
                     with torch.no_grad():
-                        z = first_stage_model.module.extract(x).detach()
-                        c = first_stage_model.module.extract(c).detach()
+                        z = first_stage_model.extract(x).detach()
+                        c = first_stage_model.extract(c).detach()
                         c = c * mask + torch.zeros_like(c).to(c.device) * (1-mask)
 
             else:
@@ -80,7 +80,7 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
                 x = x[:, :, prefix:prefix+clip_length, :, :] * mask + x_tmp * (1-mask)
                 with autocast():
                     with torch.no_grad():
-                        z = first_stage_model.module.extract(x).detach()
+                        z = first_stage_model.extract(x).detach()
                         c = torch.zeros_like(z).to(device)
 
             (loss, t), loss_dict = criterion(z.float(), c.float())
@@ -90,7 +90,7 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
                 print("Unconditional model")
             with autocast():    
                 with torch.no_grad():
-                    z = first_stage_model.module.extract(x).detach()
+                    z = first_stage_model.extract(x).detach()
 
             (loss, t), loss_dict = criterion(z.float())
 
