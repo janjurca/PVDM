@@ -6,7 +6,7 @@ model:
     embed_dim: 4
     lossconfig:
       params:
-        disc_start: 60000
+        disc_start: 10000
 
     ddconfig:
       double_z: False
