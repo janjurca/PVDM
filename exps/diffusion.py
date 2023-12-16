@@ -80,7 +80,7 @@ def diffusion(rank, args):
     """ Get Image """
     if rank == 0:
         log_(f"Loading dataset {args.data} with resolution {args.res}")
-    train_loader, test_loader, total_vid = get_loaders(rank, args.data, args.res, args.timesteps, args.skip, args.batch_size, args.n_gpus, args.seed, args.cond_model, args.data_path)
+    train_loader, test_loader, total_vid = get_loaders(rank, args.data, args.res, args.timesteps, args.skip, args.batch_size, args.n_gpus, args.seed, args.cond_model, args.data_path, data_location=args.data_path)
 
     if args.data == 'SKY':
         cond_prob = 0.2
