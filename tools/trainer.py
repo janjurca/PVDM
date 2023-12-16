@@ -150,7 +150,7 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
     losses['d_loss'] = AverageMeter()
     check = time.time()
 
-    accum_iter = 3
+    accum_iter = 6
     disc_opt = False
 
     if fp:
