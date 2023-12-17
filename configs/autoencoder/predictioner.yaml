@@ -7,7 +7,7 @@ model:
     predictioner: True
     lossconfig:
       params:
-        disc_start: 5000
+        disc_start: 10000
 
     ddconfig:
       double_z: False
