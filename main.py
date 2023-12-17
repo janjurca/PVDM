@@ -84,6 +84,7 @@ def main():
         args.skip       = config.model.params.ddconfig.skip
         args.resume     = config.model.resume
         args.amp        = config.model.amp
+        args.predictioner = config.model.params.predictioner
 
         first_stage(rank=0, args=args)
         

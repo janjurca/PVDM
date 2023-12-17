@@ -130,11 +130,11 @@ def test_fvd_ddpm(rank, ema_model, decoder, loader, it, logger=None):
     losses['fvd'] = AverageMeter()
     check = time.time()
 
-    cond_model = ema_model.module.diffusion_model.cond_model
+    cond_model = ema_model.diffusion_model.cond_model
 
     diffusion_model = DDPM(ema_model,
-                           channels=ema_model.module.diffusion_model.in_channels,
-                           image_size=ema_model.module.diffusion_model.image_size,
+                           channels=ema_model.diffusion_model.in_channels,
+                           image_size=ema_model.diffusion_model.image_size,
                            sampling_timesteps=100,
                            w=0.).to(device)
     real_embeddings = []
@@ -155,9 +155,9 @@ def test_fvd_ddpm(rank, ema_model, decoder, loader, it, logger=None):
                     break
                     x = torch.cat([x,zeros], dim=0)
                 c, real = torch.chunk(x[:k], 2, dim=1)
-                c = decoder.module.extract(rearrange(c / 127.5 - 1, 'b t c h w -> b c t h w').to(device).detach())
+                c = decoder.extract(rearrange(c / 127.5 - 1, 'b t c h w -> b c t h w').to(device).detach())
                 z = diffusion_model.sample(batch_size=k, cond=c)
-                pred = decoder.module.decode_from_sample(z).clamp(-1,1).cpu()
+                pred = decoder.decode_from_sample(z).clamp(-1,1).cpu()
                 pred = (1 + rearrange(pred, '(b t) c h w -> b t h w c', b=k)) * 127.5
                 pred = pred.type(torch.uint8)
                 pred_embeddings.append(get_fvd_logits(pred.numpy(), i3d=i3d, device=device))
@@ -175,7 +175,7 @@ def test_fvd_ddpm(rank, ema_model, decoder, loader, it, logger=None):
             for i in range(4):
                 print(i)
                 z = diffusion_model.sample(batch_size=k)
-                fake = decoder.module.decode_from_sample(z).clamp(-1,1).cpu()
+                fake = decoder.decode_from_sample(z).clamp(-1,1).cpu()
                 fake = (rearrange(fake, '(b t) c h w -> b t h w c', b=k)+1) * 127.5
                 fake = fake.type(torch.uint8)
                 fake_embeddings.append(get_fvd_logits(fake.numpy(), i3d=i3d, device=device))
@@ -213,7 +213,7 @@ def test_fvd_ddpm(rank, ema_model, decoder, loader, it, logger=None):
             for i in range(4):
                 print(i)
                 z = diffusion_model.sample(batch_size=4)
-                fake = decoder.module.decode_from_sample(z).clamp(-1,1).cpu()
+                fake = decoder.decode_from_sample(z).clamp(-1,1).cpu()
                 fake = (1+rearrange(fake, '(b t) c h w -> b t h w c', b=4)) * 127.5
                 fake = fake.type(torch.uint8)
                 fake_embeddings.append(get_fvd_logits(fake.numpy(), i3d=i3d, device=device))

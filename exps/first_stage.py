@@ -23,7 +23,7 @@ def first_stage(rank, args):
     rootdir = logger.logdir
     log_ = logger.log
     log_(f"Loading dataset {args.data} with resolution {args.res}")
-    train_loader, test_loader, total_vid = get_loaders(rank, args.data, args.res, args.timesteps, args.skip, args.batch_size, args.n_gpus, args.seed, cond=False, data_location=args.data_path)
+    train_loader, test_loader, total_vid = get_loaders(rank, args.data, args.res, args.timesteps, args.skip, args.batch_size, args.n_gpus, args.seed, cond=False, data_location=args.data_path, predictioner=args.predictioner)
     log_(f"Generating model")
 
     model = ViTAutoencoder(args.embed_dim, args.ddconfig)

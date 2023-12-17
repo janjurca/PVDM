@@ -113,8 +113,8 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
             if logger is not None and rank == 0:
                 logger.scalar_summary('train/diffusion_loss', losses['diffusion_loss'].average, it)
 
-                log_('[Time %.3f] [Diffusion %f]' %
-                     (time.time() - check, losses['diffusion_loss'].average))
+                log_('[Step %d] [Time %.3f] [Diffusion %f]' %
+                     (it, time.time() - check, losses['diffusion_loss'].average))
 
             losses = dict()
             losses['diffusion_loss'] = AverageMeter()
@@ -134,7 +134,7 @@ def latentDDPM(rank, first_stage_model, model, opt, criterion, train_loader, tes
                      (time.time() - check, fvd))
 
 
-def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loader, first_model, fp, logger=None):
+def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loader, first_model, fp, logger=None, predictioner=True):
     if logger is None:
         log_ = print
     else:
@@ -167,7 +167,7 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
     model.train()
     disc_start = criterion.discriminator_iter_start
     
-    for it, (x, _) in enumerate(train_loader):
+    for it, (x, p) in enumerate(train_loader):
 
         if it > 1000000:
             break
@@ -176,12 +176,18 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
         x = x.to(device)
         x = rearrange(x / 127.5 - 1, 'b t c h w -> b c t h w') # videos
 
+        wanted_result = x
+        if predictioner:
+            p = p.to(device)
+            p = rearrange(p / 127.5 - 1, 'b t c h w -> b c t h w') # videos
+            wanted_result = p
+
         if not disc_opt:
             with autocast():
                 x_tilde, vq_loss  = model(x)
                 if it % accum_iter == 0:
                     model.zero_grad()
-                ae_loss = criterion(vq_loss, x, 
+                ae_loss = criterion(vq_loss, wanted_result, 
                                     rearrange(x_tilde, '(b t) c h w -> b c t h w', b=batch_size),
                                     optimizer_idx=0,
                                     global_step=it)
@@ -203,7 +209,7 @@ def first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loa
             with autocast():
                 with torch.no_grad():
                     x_tilde, vq_loss = model(x)
-                d_loss = criterion(vq_loss, x, 
+                d_loss = criterion(vq_loss, wanted_result, 
                          rearrange(x_tilde, '(b t) c h w -> b c t h w', b=batch_size),
                          optimizer_idx=1,
                          global_step=it)
