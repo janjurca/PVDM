@@ -94,7 +94,7 @@ def test_ifvd(rank, model, loader, it, logger=None):
             fake = rearrange((fake.clamp(-1,1) + 1) * 127.5, '(b t) c h w -> b t h w c', b=real.size(0))
 
             real = real.type(torch.uint8).cpu()
-            fake = fake.type(torch.uint8)
+            fake = fake.type(torch.uint8).cpu()
 
             real_embeddings.append(get_fvd_logits(real.numpy(), i3d=i3d, device=device))
             fake_embeddings.append(get_fvd_logits(fake.cpu().numpy(), i3d=i3d, device=device))
