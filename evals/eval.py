@@ -75,12 +75,14 @@ def test_ifvd(rank, model, loader, it, logger=None):
     fake_embeddings = []
     fakes = []
     reals = []
+    predictions = []
+    real_futures = []
 
     model.eval()
     i3d = load_i3d_pretrained(device)
 
     with torch.no_grad():
-        for n, (real, idx) in enumerate(loader):
+        for n, (real, real_future) in enumerate(loader):
             if n > 512:
                 break
             batch_size = real.size(0)
@@ -99,15 +101,25 @@ def test_ifvd(rank, model, loader, it, logger=None):
             if len(fakes) < 16:
                 reals.append(rearrange(real[0:1], 'b t h w c -> b c t h w'))
                 fakes.append(rearrange(fake[0:1], 'b t h w c -> b c t h w'))
+                predictions.append(torch.cat([rearrange(real[0:1], 'b t h w c -> b c t h w').type(torch.uint8), 
+                                              rearrange(fake[0:1], 'b t h w c -> b c t h w').type(torch.uint8)], dim=2))
+                if type(real_future) == torch.Tensor and real_future.shape == real.shape:
+                    real_futures.append(rearrange(real_future[0:1], 'b t c h w -> b c t h w'))
 
     model.train()
 
     reals = torch.cat(reals)
     fakes = torch.cat(fakes)
+    predictions = torch.cat(predictions)
+    if len(real_futures) > 0:
+        real_futures = torch.cat(real_futures)
 
     if rank == 0:
         real_vid = save_image_grid(reals.cpu().numpy(), os.path.join(logger.logdir, "real.gif"), drange=[0, 255], grid_size=(4,4))
         fake_vid = save_image_grid(fakes.cpu().numpy(), os.path.join(logger.logdir, f'generated_{it}.gif'), drange=[0, 255], grid_size=(4,4))
+        if real_futures:
+            real_future_vid = save_image_grid(real_futures.cpu().numpy(), os.path.join(logger.logdir, "real_future.gif"), drange=[0, 255], grid_size=(4,4))
+            
 
         if it == 0:
             real_vid = np.expand_dims(real_vid,0).transpose(0, 1, 4, 2, 3)
