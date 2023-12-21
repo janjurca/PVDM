@@ -81,9 +81,9 @@ class Meteoset(Dataset):
         self.train = train
         
         if self.train:
-            portion = 0.9
+            portion = 0.95
         else:
-            portion = -0.1
+            portion = -0.05
 
         if portion < 0:
             self.sequences = self.sequences[int(len(self.sequences)*(1+portion)):]
