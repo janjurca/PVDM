@@ -90,6 +90,7 @@ class Meteoset(Dataset):
         else:
             self.sequences = self.sequences[:int(len(self.sequences)*portion)]
         print(f"Dataset length: {self.__len__()}")
+        random.shuffle(self.sequences)
 
 
     def __getitem__(self, index):
