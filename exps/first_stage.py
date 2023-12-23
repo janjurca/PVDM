@@ -82,6 +82,6 @@ def first_stage(rank, args):
     torch.save(model.state_dict(), rootdir + f'net_init.pth')
 
     fp = args.amp
-    first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loader, args.first_model, fp, logger)
+    first_stage_train(rank, model, opt, d_opt, criterion, train_loader, test_loader, args.first_model, fp, logger, args.predictioner)
 
     torch.save(model.state_dict(), rootdir + f'net_meta.pth')
